@@ -1,0 +1,65 @@
+# identify R genes using bedtools
+
+# follow tutorial here http://quinlanlab.org/tutorials/bedtools/bedtools.html
+
+cd /Users/helencockerton/Desktop/QTL/Files\ for\ git\ hub/
+
+mkdir -p ~/workspace/monday/bedtools
+
+cd ~/workspace/monday/bedtools
+git clone https://github.com/arq5x/bedtools2/releases/download/v2.25.0/bedtools-2.25.0.tar.gz
+cd bedtools2
+make 
+make install
+
+# The following line was added to my profile: using "nano ~/.bash_profile"
+# PATH=/Users/helencockerton/workspace/monday/bedtools/bedtools2/bin:${PATH}
+# The edited profile was loaded using:
+# . ~/.bash_profile
+
+
+tar -zxvf bedtools-2.25.0.tar.gz
+cd bedtools2
+make
+
+curl -O https://s3.amazonaws.com/bedtools-tutorials/web/maurano.dnaseI.tgz
+curl -O https://s3.amazonaws.com/bedtools-tutorials/web/cpg.bed
+curl -O https://s3.amazonaws.com/bedtools-tutorials/web/exons.bed
+curl -O https://s3.amazonaws.com/bedtools-tutorials/web/gwas.bed
+curl -O https://s3.amazonaws.com/bedtools-tutorials/web/genome.txt
+curl -O https://s3.amazonaws.com/bedtools-tutorials/web/hesc.chromHmm.bed
+
+tar -zxvf maurano.dnaseI.tgz
+rm maurano.dnaseI.tgz
+
+bedtools intersect -a cpg.bed -b exons.bed | head -5
+
+curl -O ftp://ftp.bioinfo.wsu.edu/www.rosaceae.org/Fragaria_vesca/Fvesca-genome.v2.0.a1/assembly/Fragaria_vesca_v2.0.a1_pseudomolecules.fasta.gz
+
+# put files in wd (too late now!) so move file as below
+mv Fragaria_vesca_v2.0.a1_pseudomolecules.fasta.gz /Users/helencockerton/Desktop/QTL/Files\ for\ git\ hub/dataFragaria_vesca_v2.0.a1_pseudomolecules.fasta.gz
+cd /Users/helencockerton/Desktop/QTL/Files\ for\ git\ hub/data
+curl -O ftp://ftp.bioinfo.wsu.edu/www.rosaceae.org/Fragaria_vesca/Fvesca-genome.v2.0.a1/assembly/Fragaria_vesca_v2.0.a1_pseudomolecules.gff3.gz
+
+# expand gff file using Andy's script https://github.com/eastmallingresearch/pathogen/blob/master/mimp_finder/gffexpander.pl
+
+perl gff_expander_andy.pl +- 100000 ./data/mil_primers.gff > ./data/expanded_mil_SNP.gff
+perl gff_expander_andy.pl +- 200000 ./data/mil_primers.gff > ./data/expanded_mil_SNPX.gff
+
+
+# blast MLO against genome 
+fvesca_v1.1_pseudo.fna,  MLO.gff3,
+
+bedtools intersect -wao -a expanded_mil_SNP.gff -b vesca1.1.TMCC.all.gff3 vesca1.1.NBS.all.gff3 vesca1.1.RLP.all.gff3 vesca1.1.RLK.all.gff3 vesca1.1_slrk.gff3 > intersect_output.txt
+cat intersect_output.txt | cut -f9,18 | less
+
+bedtools intersect -c -a expanded_mil_SNP.gff -b vesca1.1.TMCC.all.gff3 vesca1.1.NBS.all.gff3 vesca1.1.RLP.all.gff3 vesca1.1.RLK.all.gff3 vesca1.1_slrk.gff3 > intersect_output.txt
+less intersect_output.txt
+ 
+cat intersect_output.txt | cut -f9,18 | less -S
+
+
+perl gff_expander_andy.pl +- 200000 ./data/mil_primers.gff > ./data/expanded_mil_SNPX.gff
+bedtools intersect -c -a expanded_mil_SNPX.gff -b MLO.gff3.txt > intersect_output_mil.txt
+bedtools intersect -wao -a expanded_mil_SNPX.gff -b MLO.gff3.txt > intersect_output_mil.txt     
+bedtools intersect -wao -a expanded_mil_SNP.gff -b MLO.gff3.txt > intersect_output_mil_gwas.txt                           
